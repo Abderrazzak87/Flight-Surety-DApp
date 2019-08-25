@@ -72,6 +72,15 @@ contract FlightSuretyData {
 
     }
 
+    /**
+    * @dev fall back function
+    *     
+    */
+    function () external payable {
+
+    }
+
+
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
@@ -100,7 +109,7 @@ contract FlightSuretyData {
     * @dev Modifier that requires the function caller to be registerated to be able te register a new airline
     */
     modifier requireIsRegistered() {
-        require(registeredAirlines[msg.sender].isRegistered, "Caller is not registred");
+        require(registeredAirlines[msg.sender].isRegistered || authorizedCaller[msg.sender], "Caller is not registred");
         _;
     }
     /**
@@ -116,7 +125,7 @@ contract FlightSuretyData {
     */
     modifier requireIsAuthorized()
     {
-        require(registeredAirlines[msg.sender].isAutorised , "Caller is not autorised, you have to fund first");
+        require(registeredAirlines[msg.sender].isAutorised || authorizedCaller[msg.sender], "Caller is not autorised, you have to fund first");
         _;
     }
 
@@ -208,7 +217,8 @@ contract FlightSuretyData {
     {
         registeredAirlines[_airlineAddress].balance = registeredAirlines[_airlineAddress].balance.add(_fundAmount);
         registeredAirlines[_airlineAddress].isAutorised = true;
-        //address(this).transfer(_fundAmount);
+        //address payable contractAddress = address(uint160(address(this)));
+        //contractAddress.transfer(_fundAmount);
         contractBalance = contractBalance.add(_fundAmount);
         emit ContractFunded(_fundAmount, _airlineAddress);
     }
@@ -267,7 +277,7 @@ contract FlightSuretyData {
         {
             Insurance storage insurance = insurances[flightInsurances[_flightKey][i]];
             if (insurance.paid == false) {
-                uint256 amount = insurance.value.mul(_multiplier);
+                uint256 amount = insurance.value.mul(_multiplier).div(100);
                 creditInsuree(insurance, amount);
                 registeredAirlines[airlineAddress].balance = registeredAirlines[airlineAddress].balance.sub(amount);
             }
@@ -298,11 +308,11 @@ contract FlightSuretyData {
     {
         require(contractBalance >= _amount, "The contract balance is not sufficient to pay the insured passenger");
         require(passengerBalances[_passenger] >= _amount, "The desired amount exceedes the amount owed by the passenger");
-        //address payable payablePassengerAddress = address(uint160(_passenger));
+        address payable payablePassengerAddress = address(uint160(_passenger));
         uint256 passengerCurrentBalance = passengerBalances[_passenger];
         uint256 newBalance = passengerCurrentBalance.sub(_amount);
         passengerBalances[_passenger] = newBalance;
-        _passenger.transfer(_amount);
+        payablePassengerAddress.transfer(_amount);
         contractBalance = contractBalance.sub(_amount);
         emit PassengerPaid(_passenger, _amount);
     }

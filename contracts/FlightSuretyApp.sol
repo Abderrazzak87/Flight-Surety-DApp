@@ -12,6 +12,7 @@ import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract FlightSuretyApp {
 
     FlightSuretyData dataContract;              // Filght Surety Data contract
+    address payable private dataContractAddress;
     using SafeMath for uint256;                 // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
     using SafeMath for uint8;
 
@@ -28,10 +29,10 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
     uint8 private CONSENSUS_START = 4;                        // the consensus algorithm starts aftre 4 airlin registration
-    uint8 private CONSENSUS_ACHIEVEMENT = 50;                 // 50% vote are needed to validate a new airline registration
+    uint256 private CONSENSUS_ACHIEVEMENT = 50;                 // 50% vote are needed to validate a new airline registration
     uint256 private REGISTRATION_FEE_AIRLINES = 10 ether;
     uint256 private INSURANCE_PRICE =  1 ether;
-    uint256 private INSURANCE_PAYBACK_MULTIPLIER = 15;
+    uint256 private INSURANCE_PAYBACK_MULTIPLIER = 150;
 
     address private contractOwner;                              // Account used to deploy contract
     bool private operational = true;                            // Blocks all state changes throughout the contract if false
@@ -80,7 +81,54 @@ contract FlightSuretyApp {
     }
 
     modifier requireMinimumAmount(){
-        require(msg.value >= REGISTRATION_FEE_AIRLINES, 'Minimum registratiob fee is required');
+        require(msg.value >= REGISTRATION_FEE_AIRLINES, 'Minimum registration fee is required');
+        _;
+    }
+
+    modifier requireIsRegistered {
+        bool isRegistered;
+        (isRegistered,,,) = dataContract.fetchAirlineDetails(msg.sender);
+        require(isRegistered == true, 'Caller is not registred');
+        _;
+    }
+
+    modifier requireIsAuthorized {
+        bool isAuthorized;
+        (,isAuthorized,,) = dataContract.fetchAirlineDetails(msg.sender);
+        require(isAuthorized == true, 'Caller is not autorised, you have to fund first');
+        _;
+    }
+
+    /**
+    * @dev Modifier that requires the flight does not exist to be added
+    */
+    modifier requireFlightNotExists(address _airlineAddress, bytes32 _flightNumber, uint256 _timestamp) {
+        address airline;
+        (airline,,,,) = dataContract.fetchFlightDetails(_flightNumber);
+        require(airline != _airlineAddress, 'Flight already registered');
+        _;
+    }
+
+
+    /**
+    * @dev Modifier that requires the flight exists
+    */
+    modifier requireFlightExists(bytes32 _flightNumber) {
+        address airline;
+        (airline,,,,) = dataContract.fetchFlightDetails(_flightNumber);
+        require(airline != address(0), 'Flight does not exist');
+        _;
+    }
+
+    /**
+    * @dev Modifier that requires the insurance does not exist to be purshaced.
+    */
+    modifier requireNotInsured(address _passengerAddress, bytes32 _flightNumber) {
+        bytes32 flightKey;
+        address passenger = address(0);
+        (,,,,flightKey) = dataContract.fetchFlightDetails(_flightNumber);
+        (passenger,,) = dataContract.fetchInsuranceDetails(flightKey, _passengerAddress);
+        require(passenger == address(0), 'Insurrance already exists for this flight');
         _;
     }
 
@@ -92,9 +140,10 @@ contract FlightSuretyApp {
     * @dev Contract constructor
     *
     */
-    constructor(address _dataContractAddress) public {
+    constructor(address payable _dataContractAddress) public {
         contractOwner = msg.sender;
         dataContract = FlightSuretyData(_dataContractAddress);
+        dataContractAddress = _dataContractAddress;
     }
 
     /********************************************************************************************/
@@ -131,6 +180,7 @@ contract FlightSuretyApp {
      */
     function registerAirline(address _airlineAddress, bytes32 _airLineName) external
     requireIsOperational
+    requireIsRegistered
     {
         // Get the number of registred airline from the contract data
         uint256 airlinesNumber = dataContract.getAirlinesNumber();
@@ -152,17 +202,16 @@ contract FlightSuretyApp {
                 }
             }
 
-            if(duplicateVote){
+            if(!duplicateVote){
                 voteMultiCaller[_airlineAddress].push(msg.sender);
-                emit AirlineVoted(msg.sender, voteMultiCaller[_airlineAddress].length);
+                //emit AirlineVoted(msg.sender, voteMultiCaller[_airlineAddress].length);
             }
-            else {
-                // Verify consensus achievement : 50% vote needed  to register a new airline
-                if ( voteMultiCaller[_airlineAddress].length.div(airlinesNumber).mul(100) >= CONSENSUS_ACHIEVEMENT)
-                {
-                    dataContract.registerAirline(_airlineAddress, _airLineName);
-                    emit AirLineRegistrated(_airlineAddress);
-                }
+
+            // Verify consensus achievement : 50% vote needed  to register a new airline
+            if ( (voteMultiCaller[_airlineAddress].length.mul(100)).div(airlinesNumber) >= CONSENSUS_ACHIEVEMENT)
+            {
+                dataContract.registerAirline(_airlineAddress, _airLineName);
+                emit AirLineRegistrated(_airlineAddress);
             }
         }
     }
@@ -173,11 +222,13 @@ contract FlightSuretyApp {
     *      resulting in insurance payouts, the contract should be self-sustaining
     *
     */
-    function fundAirline() external payable
+    function fundAirline() public payable
     requireIsOperational
+    requireIsRegistered
     requireMinimumAmount
     {
-        address(dataContract).transfer(msg.value);
+        //address payable dataContractAddress = address(uint160(dataContract));
+        dataContractAddress.transfer(msg.value);
         dataContract.fund(msg.value, msg.sender);
         emit ContractFunded(msg.value, msg.sender);
 
@@ -188,6 +239,9 @@ contract FlightSuretyApp {
      */
     function addNewFlight(bytes32 _flightNumber, uint256 _timestamp) external
     requireIsOperational
+    requireIsRegistered
+    requireIsAuthorized
+    requireFlightNotExists(msg.sender, _flightNumber, _timestamp)
     {
         dataContract.addNewFlight(msg.sender, _flightNumber, _timestamp, STATUS_CODE_UNKNOWN);
         emit NewFlightAdded(msg.sender, _flightNumber, _timestamp, STATUS_CODE_UNKNOWN);
@@ -198,14 +252,59 @@ contract FlightSuretyApp {
      */
     function buyInsurance(bytes32 _flightNumber) external payable
     requireIsOperational
+    requireFlightExists(_flightNumber)
+    requireNotInsured(msg.sender, _flightNumber)
     {
         //send the money and buy insurance and top up the airline balance
         require(msg.value <= INSURANCE_PRICE, 'Exceeded insurance price allowed');
         bytes32 flightKey;
         (,,,,flightKey) = dataContract.fetchFlightDetails(_flightNumber);
-        address(dataContract).transfer(msg.value);
+        //address payable dataContractAddress = address(uint160(address(dataContract)));
+        dataContractAddress.transfer(msg.value);
         dataContract.buy(flightKey, msg.sender, msg.value);
         emit InsurancePurchased(_flightNumber, msg.sender, msg.value);
+    }
+
+    /**
+     *  @dev returns the number of the airlines registred to the contract
+     *
+    */
+    function getAirlinesNumber() external view requireIsOperational returns(uint256)
+    {
+        return dataContract.getAirlinesNumber();
+    }
+
+    /**
+     *  @dev fetch Airline details
+     *  @param _airlineAddress the airline address to fetch
+     *
+    */
+    function fetchAirlineDetails(address _airlineAddress) external view requireIsOperational returns
+    (   bool isRegistered,
+        bool isAutorised,
+        bytes32 name,
+        uint256 balance
+    )
+    {
+        (isRegistered, isAutorised, name, balance) = dataContract.fetchAirlineDetails(_airlineAddress);
+        return (isRegistered, isAutorised, name, balance);
+    }
+
+    /**
+     *  @dev fetch Flight details
+     *  @param _flightNumber the flught number to fetch
+     *
+    */
+    function fetchFlightDetails(bytes32 _flightNumber) external view requireIsOperational returns
+    (
+        address airline,
+        bytes32 flightNumber,
+        uint256 timestamp,
+        uint8 statusCode
+    )
+    {
+        (airline, flightNumber, timestamp, statusCode,) = dataContract.fetchFlightDetails(_flightNumber);
+        return (airline, flightNumber, timestamp, statusCode);
     }
 
     function generateKey(address _airlineAddress, bytes32 _flight, uint256 _timestamp)  internal pure returns(bytes32) {
@@ -216,12 +315,13 @@ contract FlightSuretyApp {
     *
     */
 
-    function processFlightStatus(bytes32 oracleRequestKey, address _airline, bytes32 _flightNumber, uint256 _timestamp, uint8 _statusCode)
-    private
+    function processFlightStatus(bytes32 oracleRequestKey, address _airline, bytes32 _flightNumber, uint256 _timestamp, uint8 _statusCode) private
+    requireIsOperational
+    requireIsAuthorized
     {
         if(_statusCode == STATUS_CODE_LATE_AIRLINE){
             bytes32 flightKey = generateKey(_airline, _flightNumber, _timestamp);
-            dataContract.creditInsurees(flightKey, INSURANCE_PAYBACK_MULTIPLIER.div(10));
+            dataContract.creditInsurees(flightKey, INSURANCE_PAYBACK_MULTIPLIER);
             dataContract.setFlightStatus(flightKey, STATUS_CODE_LATE_AIRLINE);
             oracleResponses[oracleRequestKey].isOpen = false;
         }
@@ -313,7 +413,7 @@ contract FlightSuretyApp {
                             )
                             view
                             external
-                            returns(uint8[3])
+                            returns(uint8[3] memory)
     {
         require(oracles[msg.sender].isRegistered, "Not registered as an oracle");
 
@@ -372,12 +472,7 @@ contract FlightSuretyApp {
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function generateIndexes
-                            (                       
-                                address account         
-                            )
-                            internal
-                            returns(uint8[3])
+    function generateIndexes(address account) internal returns(uint8[3] memory)
     {
         uint8[3] memory indexes;
         indexes[0] = getRandomIndex(account);
@@ -437,5 +532,18 @@ contract FlightSuretyData {
     //function generateKey(address _airlineAddress, bytes32 _flight, uint256 _timestamp)  internal pure returns(bytes32);
     function creditInsurees(bytes32 _flightKey, uint256 _multiplier) external;
     function setFlightStatus(bytes32 _flightKey, uint8 _statusCode) external;
+    function fetchAirlineDetails(address _airlineAddress) external view  returns
+    (   bool isRegistered,
+        bool isAutorised,
+        bytes32 name,
+        uint256 balance
+    );
+    function fetchInsuranceDetails(bytes32 _flightKey, address _passengerAddress) external view
+    returns
+    (
+        address passenger,
+        uint256 value,
+        bool paid
+    );
 
 }

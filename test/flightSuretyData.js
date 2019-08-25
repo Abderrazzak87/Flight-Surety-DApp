@@ -1,9 +1,9 @@
-
 var Test = require('../config/testConfig.js');
 var BigNumber = require('bignumber.js');
 const truffleAssert = require('truffle-assertions');
 let amount = web3.utils.toWei('20', 'ether');
 let insuranceAmount = web3.utils.toWei('1', 'ether');
+let INSURANCE_PAYBACK_MULTIPLIER = 150;
 
 contract('Flight Surety Data Tests', async (accounts) => {
     var config;
@@ -283,7 +283,7 @@ contract('Flight Surety Data Tests', async (accounts) => {
     
     });
 
-    it('(passenger) cannot buy insurance for an existing flight using buy() more than once', async () => {
+    it('(passenger) cannot buy insurance for the same flight using buy() more than once', async () => {
 
         let newAirline = accounts[15]
         let newAirlineName = web3.utils.utf8ToHex('newAirline 15')
@@ -307,6 +307,118 @@ contract('Flight Surety Data Tests', async (accounts) => {
          await truffleAssert.reverts( config.flightSuretyData.buy(flightResult[4], passengerAddress, insuranceAmount, {from: newAirline}) 
                                         , 'Insurrance already exists for this flight')
         
+    });
+
+    it('(flight) can credit all insurees for the given flight using creditInsurees()', async () => {
+
+        let newAirline = accounts[17]
+        let newAirlineName = web3.utils.utf8ToHex('newAirline 17')
+        let passenger1Address = accounts[18]
+        let passenger2Address = accounts[19]
+
+        // register airline
+        await config.flightSuretyData.registerAirline(newAirline, newAirlineName, {from: config.owner})
+    
+        // fund airline
+        await config.flightSuretyData.fund(amount, newAirline, {from: newAirline}) 
+     
+        // Add new flight
+        const flightNumber = 'AF2500'
+        await config.flightSuretyData.addNewFlight(newAirline, web3.utils.utf8ToHex(flightNumber), 1122334455, 0, {from: newAirline}) 
+
+         // Buy insurance for two insurees
+         let flightResult =  await config.flightSuretyData.fetchFlightDetails.call(web3.utils.utf8ToHex(flightNumber)) 
+         await config.flightSuretyData.buy(flightResult[4], passenger1Address, insuranceAmount, {from: newAirline}) 
+         await config.flightSuretyData.buy(flightResult[4], passenger2Address, insuranceAmount, {from: newAirline}) 
+
+         // Get the airline balance befor crediting insurees
+         let airlineBalanceBefor = (await config.flightSuretyData.fetchAirlineDetails.call(newAirline))[3]
+
+         // credit insurees
+         tx = await config.flightSuretyData.creditInsurees(flightResult[4], INSURANCE_PAYBACK_MULTIPLIER, {from: newAirline}) 
+         
+         // Get the airline balance befor crediting insurees
+         let airlineBalanceAfler = (await config.flightSuretyData.fetchAirlineDetails.call(newAirline))[3]
+         let amountToCredit = ((insuranceAmount * INSURANCE_PAYBACK_MULTIPLIER) / 100) * 2
+
+         assert.equal(Number(airlineBalanceAfler), Number(airlineBalanceBefor) - Number(amountToCredit), 'Error: airline balance not correct after creting insurees')
+        
+    });
+
+    it('(flight) cannot credit insuree for an insurance already paid using creditInsurees()', async () => {
+
+        let newAirline = accounts[20]
+        let newAirlineName = web3.utils.utf8ToHex('newAirline 20')
+        let passengerAddress = accounts[21]
+
+        // register airline
+        await config.flightSuretyData.registerAirline(newAirline, newAirlineName, {from: config.owner})
+    
+        // fund airline
+        await config.flightSuretyData.fund(amount, newAirline, {from: newAirline}) 
+     
+        // Add new flight
+        const flightNumber = 'AF2600'
+        await config.flightSuretyData.addNewFlight(newAirline, web3.utils.utf8ToHex(flightNumber), 1122334455, 0, {from: newAirline}) 
+
+         // Buy insurance
+         let flightResult =  await config.flightSuretyData.fetchFlightDetails.call(web3.utils.utf8ToHex(flightNumber)) 
+         await config.flightSuretyData.buy(flightResult[4], passengerAddress, insuranceAmount, {from: newAirline}) 
+
+         // credit insurees
+         await config.flightSuretyData.creditInsurees(flightResult[4], INSURANCE_PAYBACK_MULTIPLIER, {from: newAirline}) 
+
+
+          // Get the airline balance befor crediting insurees
+          let airlineBalanceBefor = (await config.flightSuretyData.fetchAirlineDetails.call(newAirline))[3]
+
+          // credit the same passenger fot the same insurance
+          tx = await config.flightSuretyData.creditInsurees(flightResult[4], INSURANCE_PAYBACK_MULTIPLIER, {from: newAirline}) 
+          
+          // Get the airline balance befor crediting insurees
+          let airlineBalanceAfler = (await config.flightSuretyData.fetchAirlineDetails.call(newAirline))[3]
+ 
+          assert.equal(Number(airlineBalanceAfler), Number(airlineBalanceBefor), 'Error: insuree cannot be credited twice for the same insurance')
+    });
+
+
+    it('(flight) can pay an insuree using pay()', async () => {
+
+        let newAirline = accounts[22]
+        let newAirlineName = web3.utils.utf8ToHex('newAirline 22')
+        let passengerAddress = accounts[23]
+
+        // register airline
+        await config.flightSuretyData.registerAirline(newAirline, newAirlineName, {from: config.owner})
+    
+        // fund airline
+        await config.flightSuretyData.fund(amount, newAirline, {from: newAirline}) 
+     
+        // Add new flight
+        const flightNumber = 'AF2700'
+        await config.flightSuretyData.addNewFlight(newAirline, web3.utils.utf8ToHex(flightNumber), 1122334455, 0, {from: newAirline}) 
+
+        // Buy insurance
+        let flightResult =  await config.flightSuretyData.fetchFlightDetails.call(web3.utils.utf8ToHex(flightNumber)) 
+        await config.flightSuretyData.buy(flightResult[4], passengerAddress, insuranceAmount, {from: newAirline}) 
+         
+        // credit insurees
+        await config.flightSuretyData.creditInsurees(flightResult[4], INSURANCE_PAYBACK_MULTIPLIER, {from: newAirline})
+
+        // Get Passenger balance befor paying
+        let passengerBalanceBefor = Number(await web3.eth.getBalance(passengerAddress))
+         
+        // Pay passenger
+        let amountToPay = web3.utils.toWei(((insuranceAmount * INSURANCE_PAYBACK_MULTIPLIER) / 100).toString())
+        tx = await config.flightSuretyData.pay(passengerAddress, amountToPay, {from: newAirline}) 
+        
+        // Get Passenger balance befor paying
+        let passengerBalanceAfter = Number(await web3.eth.getBalance(passengerAddress))
+
+        //assert.equal(Number(passengerBalanceAfter), Number(passengerBalanceBefor) + Number(amountToPay) , 'Error: passenger balance')
+        assert.equal(tx.logs[0].event, "PassengerPaid", 'Invalid event emitted')   
+
+          
     });
 
 });
