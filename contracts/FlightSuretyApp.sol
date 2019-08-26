@@ -48,7 +48,7 @@ contract FlightSuretyApp {
     event AirLineRegistrated(address _airlineAddress);
     event ContractFunded(uint256 _fundAmount, address _airlineAddress);
     event NewFlightAdded(address _airlineAddress, bytes32 _flightNumber, uint256 _timestamp, uint8 _status);
-    event InsurancePurchased(bytes32 _flightKey, address _passengerAddress, uint256 _amount);
+    event InsurancePurchased(bytes32 _flightNumber, address _passengerAddress, uint256 _amount);
     event PassengerPaid(address _passenger, uint256 _amount);
     event AirlineVoted(address _airlineAddress, uint256 voteNumber);
 
@@ -128,7 +128,7 @@ contract FlightSuretyApp {
         address passenger = address(0);
         (,,,,flightKey) = dataContract.fetchFlightDetails(_flightNumber);
         (passenger,,) = dataContract.fetchInsuranceDetails(flightKey, _passengerAddress);
-        require(passenger == address(0), 'Insurrance already exists for this flight');
+        require(!(passenger == _passengerAddress), 'Insurrance already exists for this flight');
         _;
     }
 
@@ -265,6 +265,10 @@ contract FlightSuretyApp {
         emit InsurancePurchased(_flightNumber, msg.sender, msg.value);
     }
 
+    function withdraw(uint256 amount) external requireIsOperational {
+        dataContract.pay(msg.sender, amount);
+    }
+
     /**
      *  @dev returns the number of the airlines registred to the contract
      *
@@ -317,7 +321,6 @@ contract FlightSuretyApp {
 
     function processFlightStatus(bytes32 oracleRequestKey, address _airline, bytes32 _flightNumber, uint256 _timestamp, uint8 _statusCode) private
     requireIsOperational
-    requireIsAuthorized
     {
         if(_statusCode == STATUS_CODE_LATE_AIRLINE){
             bytes32 flightKey = generateKey(_airline, _flightNumber, _timestamp);
@@ -545,5 +548,6 @@ contract FlightSuretyData {
         uint256 value,
         bool paid
     );
+    function pay(address _passenger, uint256 _amount) external payable;
 
 }

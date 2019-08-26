@@ -1,8 +1,9 @@
-var Test = require('../config/testConfig.js');
-var BigNumber = require('bignumber.js');
-const truffleAssert = require('truffle-assertions');
-let amount = web3.utils.toWei('10', 'ether');
-let insuranceAmount = web3.utils.toWei('1', 'ether');
+var Test = require('../config/testConfig.js')
+var BigNumber = require('bignumber.js')
+const truffleAssert = require('truffle-assertions')
+let amount = web3.utils.toWei('10', 'ether')
+let insuranceAmount = web3.utils.toWei('1', 'ether')
+let oneEther = web3.utils.toWei('1', 'ether')
 
 contract('Flight Surety App Tests', async (accounts) => {
     var config;
@@ -92,11 +93,11 @@ contract('Flight Surety App Tests', async (accounts) => {
         let newAirline2 = accounts[6]
         let newAirlineName2 = web3.utils.utf8ToHex('newAirline 6')
 
-        let airlinesNumberBefor = Number(await config.flightSuretyApp.getAirlinesNumber.call())
+        let airlinesNumberBefore= Number(await config.flightSuretyApp.getAirlinesNumber.call())
         tx = await config.flightSuretyApp.registerAirline(newAirline2, newAirlineName2)
         let airlinesNumberAfter = Number(await config.flightSuretyApp.getAirlinesNumber.call())
 
-        assert.equal(airlinesNumberBefor, airlinesNumberAfter, 'Error: The number of airlines is not valid')
+        assert.equal(airlinesNumberBefore, airlinesNumberAfter, 'Error: The number of airlines is not valid')
   
     });
 
@@ -114,7 +115,7 @@ contract('Flight Surety App Tests', async (accounts) => {
 
         // vote# 2
         let tx = await config.flightSuretyApp.registerAirline(newAirline, newAirlineName, {from: accounts[5]})
-        let resut = await config.flightSuretyApp.fetchAirlineDetails.call(newAirline);
+        let resut = await config.flightSuretyApp.fetchAirlineDetails.call(newAirline)
    
         // Verify the result set    
         assert.equal(resut[0], true, 'Error: The isRegistered airline is not registered correctly')
@@ -127,15 +128,15 @@ contract('Flight Surety App Tests', async (accounts) => {
     });
 
     it('(airline) can fund Airline using fundAirline() if the caller is registred', async () => {
-        let newAirline = accounts[28]
+        let newAirline = accounts[8]
         let newAirlineName = web3.utils.utf8ToHex('newAirline 8')
         // register airline
         await config.flightSuretyApp.registerAirline(newAirline, newAirlineName, {from: config.firstAirline})
         await config.flightSuretyApp.registerAirline(newAirline, newAirlineName, {from: accounts[5]})
         await config.flightSuretyApp.registerAirline(newAirline, newAirlineName, {from: accounts[7]})
         
-        // Get the contract banlance befor funding
-        let contractBalanceBefor = Number(await web3.eth.getBalance(config.flightSuretyData.address)) 
+        // Get the contract banlance Beforefunding
+        let contractBalanceBefore= Number(await web3.eth.getBalance(config.flightSuretyData.address)) 
   
         // fund airline
         let tx = await config.flightSuretyApp.fundAirline({from: newAirline, value: amount})
@@ -149,15 +150,15 @@ contract('Flight Surety App Tests', async (accounts) => {
         assert.equal(resut[1], true, 'Error: The isAutorised airline is not updated correctly')
         assert.equal(resut[3], amount, 'Error: The balance airline is not updated correctly')
         assert.equal(tx.logs[0].event, "ContractFunded", 'Error: Invalid event emitted')
-        assert.equal(contractBalanceAfter, contractBalanceBefor + Number(amount) , 'Error: The contract balance variable is not updated correctly')
+        assert.equal(contractBalanceAfter, contractBalanceBefore+ Number(amount) , 'Error: The contract balance variable is not updated correctly')
   
     });
 
     it('(airline) cannot fund Airline using fundAirline() if the caller is not registred', async () => {
     
         let newAirline = accounts[9]
-        // Get the contract banlance befor funding
-        let contractBalanceBefor = Number(await web3.eth.getBalance(config.flightSuretyData.address)) 
+        // Get the contract banlance Beforefunding
+        let contractBalanceBefore= Number(await web3.eth.getBalance(config.flightSuretyData.address)) 
   
         // fund airline
         await truffleAssert.reverts(config.flightSuretyApp.fundAirline({from: newAirline, value: amount}) , "Caller is not registred" )
@@ -165,14 +166,14 @@ contract('Flight Surety App Tests', async (accounts) => {
         let contractBalanceAfter = Number(await web3.eth.getBalance(config.flightSuretyData.address)) 
 
         // Verify the result set
-        assert.equal(Number(contractBalanceBefor), Number(contractBalanceAfter), 'Error: The contract balance variable is updated wrongly')
+        assert.equal(Number(contractBalanceBefore), Number(contractBalanceAfter), 'Error: The contract balance variable is updated wrongly')
     
     });
 
     it('(airline) cannot fund Airline using fundAirline() with an amount < minimun required', async () => {
   
         // fund airline
-        await truffleAssert.reverts(config.flightSuretyApp.fundAirline({from: accounts[28], value: insuranceAmount}) , 'Minimum registration fee is required')
+        await truffleAssert.reverts(config.flightSuretyApp.fundAirline({from: accounts[8], value: insuranceAmount}) , 'Minimum registration fee is required')
 
     });
 
@@ -275,8 +276,8 @@ contract('Flight Surety App Tests', async (accounts) => {
         const flightNumber = 'AF2200'
         await config.flightSuretyApp.addNewFlight(web3.utils.utf8ToHex(flightNumber), 1122334455, {from: newAirline}) 
 
-        // Get the contract banlance befor buying
-        let contractBalanceBefor = Number(await web3.eth.getBalance(config.flightSuretyData.address)) 
+        // Get the contract banlance Beforebuying
+        let contractBalanceBefore= Number(await web3.eth.getBalance(config.flightSuretyData.address)) 
   
         // buy insurance
         let tx = await config.flightSuretyApp.buyInsurance(web3.utils.utf8ToHex(flightNumber), {from: passenger, value: insuranceAmount})
@@ -286,7 +287,7 @@ contract('Flight Surety App Tests', async (accounts) => {
 
         // Verify the result set
         assert.equal(tx.logs[0].event, "InsurancePurchased", 'Invalid event emitted') 
-        assert.equal(Number(contractBalanceAfter), Number(contractBalanceBefor) + Number(insuranceAmount), 'Error: The contract balance variable is updated wrongly')
+        assert.equal(Number(contractBalanceAfter), Number(contractBalanceBefore) + Number(insuranceAmount), 'Error: The contract balance variable is updated wrongly')
 
     });
 
@@ -344,6 +345,118 @@ contract('Flight Surety App Tests', async (accounts) => {
         
     });
 
+    describe('(oracle-airline-flight-passenger): Test of process flight status, oracle request and insurees credit ', () => {
+        let chosenIndex;
+        let oracles = new Map();
+        let matchingIndexOracles = [];
+         // choos a registred and funded airline from early tests
+        let airline = accounts[10]
+        let passenger1 = accounts[20]
+        let passenger2 = accounts[21]
+        let passenger3 = accounts[22]
+        const flightNumber = web3.utils.utf8ToHex('AF2500')
 
+        before(async() => {
+           
+            // Add new flight
+            config.flightSuretyApp.addNewFlight(flightNumber, 1122334455, {from: airline}) 
+  
+            // Process flight status
+            let tx = await config.flightSuretyApp.fetchFlightStatus(airline, flightNumber, 1122334455, {from: airline})
+            truffleAssert.eventEmitted(tx, 'OracleRequest', (ev) => {
+                chosenIndex = Number(ev.index)
+                return true
+            })
+
+            // Register Oracles
+            for (let i=30; i < 50; i++) {
+                await config.flightSuretyApp.registerOracle({from: accounts[i], value: oneEther})
+                let indexes = await config.flightSuretyApp.getMyIndexes.call({from: accounts[i]})
+                oracles.set(accounts[i], [Number(indexes[0]), Number(indexes[1]), Number(indexes[2])]);
+            }
+
+            // look for matching Oracles
+            for (let [address, indexes] of oracles) {
+                indexes.forEach(index => {
+                     if (index == chosenIndex){
+                        matchingIndexOracles.push(address);
+
+                    }
+                })
+            }
+        }) 
+
+        it('(airline-flight-passenger) cannot submitOracleResponse if index does not belong to the oracles', async () => {
+            await truffleAssert.reverts(config.flightSuretyApp.submitOracleResponse(99, airline, flightNumber, 1122334455, 20, {from: accounts[1]}), 
+                                'Index does not match oracle request')
+        })
+
+        it('(airline-flight-passenger) cannot submitOracleResponse if airline (account[5]) is not treated by the oracle', async() => {
+            await truffleAssert.reverts(config.flightSuretyApp.submitOracleResponse(chosenIndex, accounts[5], flightNumber, 1122334455, 20, {from: matchingIndexOracles[0]}), 
+                                "Flight or timestamp do not match oracle request")
+        })
+
+        it('(airline-flight-passenger) can submitOracleResponse if all values (index, airline, flight) are treated by the oracle', async() => {
+            let tx = await config.flightSuretyApp.submitOracleResponse(chosenIndex, airline, flightNumber, 1122334455, 20, {from: matchingIndexOracles[1]})
+            //console.log(tx.logs[0])
+            assert.equal(tx.logs[0].event, "OracleReport", 'Invalid event emitted')
+
+            let eventArgAirline
+            let eventArgFlightNumber
+            let eventArgTimestamp
+            let eventArgStatus
+
+            truffleAssert.eventEmitted(tx, 'OracleReport', (ev) => {
+                eventArgAirline = ev.airline
+                eventArgFlightNumber = web3.utils.hexToUtf8(ev.flight)
+                eventArgTimestamp = Number(ev.timestamp)
+                eventArgStatus = Number(ev.status)
+                assert.equal(eventArgAirline, airline, 'Error: Invalid airline address')
+                assert.equal(eventArgFlightNumber, web3.utils.hexToUtf8(flightNumber), 'Error: Invalid flight name')
+                assert.equal(eventArgTimestamp, 1122334455, 'Error: Invalid flight timestamp')
+                assert.equal(eventArgStatus, 20, 'Error: Invalid flight status')
+                return true
+            });
+                                
+        })
+
+        it('(airline-flight-passenger) can call FlightStatusInfo and processFlightStatus and creditInsurees when 3 oracles submitted statusCode 20', async() => {
+            if(matchingIndexOracles.length <3){
+                assert.fail(`Test failed: less than 3 oracles have the correct index of ${chosenIndex}`);
+            }
+
+            // buy 3 insurance
+            await config.flightSuretyApp.buyInsurance(flightNumber, {from: passenger1, value: insuranceAmount})
+            await config.flightSuretyApp.buyInsurance(flightNumber, {from: passenger2, value: insuranceAmount})
+            await config.flightSuretyApp.buyInsurance(flightNumber, {from: passenger3, value: insuranceAmount})
+
+            // Get passenger and airline balances
+            let passengerBalanceBefore = await config.flightSuretyData.getPassengerBalance.call(passenger1)
+            let airlineBalanceBefore = (await config.flightSuretyData.fetchAirlineDetails.call(airline))[3]
+
+            assert.equal(passengerBalanceBefore, Number(0), 'Error: Passenger balance should be equal to 0')
+            assert.equal(Number(airlineBalanceBefore), Number(web3.utils.toWei('13', 'ether')), 'Error: Airline balance should be equal to 13')
+
+            //await config.flightSuretyApp.submitOracleResponse(chosenIndex, airline, flightNumber, 1122334455, 20, {from: matchingIndexOracles[3]})
+            await config.flightSuretyApp.submitOracleResponse(chosenIndex, airline, flightNumber, 1122334455, 20, {from: matchingIndexOracles[1]})
+            let tx = await config.flightSuretyApp.submitOracleResponse(chosenIndex, airline, flightNumber, 1122334455, 20, {from: matchingIndexOracles[2]})
+
+            // Get passenger and airline balances
+            let passenger1BalanceAfter = await config.flightSuretyData.getPassengerBalance.call(passenger1)
+            let passenger2BalanceAfter = await config.flightSuretyData.getPassengerBalance.call(passenger2)
+            let passenger3BalanceAfter = await config.flightSuretyData.getPassengerBalance.call(passenger2)
+            let airlineBalanceAfter = (await config.flightSuretyApp.fetchAirlineDetails.call(airline))[3]
+
+            
+            assert.equal(Number(passenger1BalanceAfter), Number(web3.utils.toWei('1.5', 'ether')), 'Error: Passenger balance should be equal to 1.5')
+            assert.equal(Number(passenger2BalanceAfter), Number(web3.utils.toWei('1.5', 'ether')), 'Error: Passenger balance should be equal to 1.5')
+            assert.equal(Number(passenger3BalanceAfter), Number(web3.utils.toWei('1.5', 'ether')), 'Error: Passenger balance should be equal to 1.5')
+            assert.equal(Number(airlineBalanceAfter), Number(web3.utils.toWei('8.5', 'ether')), 'Error: airline balance should be equal to 9.5')
+
+
+        })
+
+    });
 
 });
+

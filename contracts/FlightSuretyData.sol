@@ -293,7 +293,7 @@ contract FlightSuretyData {
     requireIsAuthorized
     {
         require (!_insurance.paid, "This insurance has already been paid");
-        passengerBalances[_insurance.passenger] = passengerBalances[_insurance.passenger].add(_amount).add(_insurance.value);
+        passengerBalances[_insurance.passenger] = passengerBalances[_insurance.passenger].add(_amount);
         _insurance.paid = true;
     }
 
