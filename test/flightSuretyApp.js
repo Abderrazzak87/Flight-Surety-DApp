@@ -355,6 +355,7 @@ contract('Flight Surety App Tests', async (accounts) => {
         let passenger2 = accounts[21]
         let passenger3 = accounts[22]
         const flightNumber = web3.utils.utf8ToHex('AF2500')
+        let gasPrice = Number(web3.utils.toWei('0.1', 'ether'))
 
         before(async() => {
            
@@ -451,12 +452,62 @@ contract('Flight Surety App Tests', async (accounts) => {
             assert.equal(Number(passenger1BalanceAfter), Number(web3.utils.toWei('1.5', 'ether')), 'Error: Passenger balance should be equal to 1.5')
             assert.equal(Number(passenger2BalanceAfter), Number(web3.utils.toWei('1.5', 'ether')), 'Error: Passenger balance should be equal to 1.5')
             assert.equal(Number(passenger3BalanceAfter), Number(web3.utils.toWei('1.5', 'ether')), 'Error: Passenger balance should be equal to 1.5')
-            assert.equal(Number(airlineBalanceAfter), Number(web3.utils.toWei('8.5', 'ether')), 'Error: airline balance should be equal to 9.5')
+            assert.equal(Number(airlineBalanceAfter), Number(web3.utils.toWei('8.5', 'ether')), 'Error: airline balance should be equal to 8.5')
 
 
         })
 
-    });
+        it('(airline-flight-passenger) cannot call submitOracleResponse if the flight is already processed', async() => {
+            if(matchingIndexOracles.length <4){
+                assert.fail(`Test failed: less than 4 oracles have the correct index of ${chosenIndex}`)
+            }
+            await truffleAssert.reverts(config.flightSuretyApp.submitOracleResponse(chosenIndex, airline, flightNumber, 1122334455, 20, {from: matchingIndexOracles[3]}), 
+            "Flight or timestamp do not match oracle request")
+        })
+
+        it('(passenger) can withraw fund if his balance is > 0', async() => {
+    
+            // Get the contract and passenger banlances before withdraw
+            let contractBalanceBefore= Number(await web3.eth.getBalance(config.flightSuretyData.address)) 
+            let passengerBalanceBefore = Number(await web3.eth.getBalance(passenger1))
+            let amountToWithraw = await config.flightSuretyData.getPassengerBalance.call(passenger1)
+    
+            let tx = await config.flightSuretyApp.withdraw(amountToWithraw, {from: passenger1})
+    
+            // Get the contract and passenger banlances before withdraw
+            let contractBalanceAfter= Number(await web3.eth.getBalance(config.flightSuretyData.address)) 
+            let passengerBalanceAfter = Number(await web3.eth.getBalance(passenger1))
+            let amountToWithrawAfter = await config.flightSuretyData.getPassengerBalance.call(passenger1)
+    
+            assert.equal(Number(amountToWithrawAfter), 0, 'Error: amountToWithrawAfter should be equal to 0')
+            assert.isBelow(Number(passengerBalanceAfter) - (Number(passengerBalanceBefore) + Number(amountToWithraw)), gasPrice, 'Error: Passenger balance is not valid')
+            assert.isBelow(Number(contractBalanceBefore) - (Number(contractBalanceAfter) + Number(amountToWithraw)), gasPrice,'Error: Contract balance is not valid')
+    
+        })
+
+        it('(passenger) cannot withraw fund more than his balance', async() => {
+    
+            // Get the contract and passenger banlances before withdraw
+            let contractBalanceBefore= Number(await web3.eth.getBalance(config.flightSuretyData.address)) 
+            let passengerBalanceBefore = Number(await web3.eth.getBalance(passenger2))
+            let amountToWithraw = web3.utils.toWei('2', 'ether')
+    
+            await truffleAssert.reverts(config.flightSuretyApp.withdraw(amountToWithraw, {from: passenger2}),
+                            "The desired amount exceedes the amount owed by the passenger")
+    
+            // Get the contract and passenger banlances before withdraw
+            let contractBalanceAfter= Number(await web3.eth.getBalance(config.flightSuretyData.address)) 
+            let passengerBalanceAfter = Number(await web3.eth.getBalance(passenger2))
+            let amountToWithrawAfter = await config.flightSuretyData.getPassengerBalance.call(passenger2)
+    
+            assert.equal(Number(amountToWithrawAfter), Number(amountToWithrawAfter), 'Error: amountToWithrawAfter should not change ')
+            assert.isBelow(Number(passengerBalanceBefore) -  Number(passengerBalanceAfter) ,gasPrice, 'Error: Passenger balance is not valid')
+            assert.equal(Number(contractBalanceBefore), Number(contractBalanceAfter) , 'Error: Contract balance is not valid')
+    
+        })
+             
+
+    })
 
 });
 
