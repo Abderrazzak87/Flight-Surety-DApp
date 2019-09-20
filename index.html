@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Surety Dapp</title>
+    <!--link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet"-->
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link href="https://fonts.googleapis.com/css?family=Work+Sans:300,400,500,600,700,800" rel="stylesheet">
+ </head>
+
+<body>
+
+    <div class="container">
+        <h1 style="text-align: center;">Flight Surety</h1>
+        <hr>
+        <p style="text-align: center;">You flight insurance in the Ethereum Blockchain.</p>
+    </div>
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- <script src="js/web3.min.js"></script> -->
+    <script src="dapp/truffle-contract.js"></script>
+    <script src="dapp/app.js"></script>
+
+    <div class="form-style-2" >
+        <div class="form-style-2-heading">Contract Administration (owner/admin)</div>
+        <label for="appAddress">
+            <span>Deployed App Contract Address </span>
+            <input type="text" class="input-field" id="appAddress" name="appAddress" value="0x0000000000000000000000000000000000000000" size="50" disabled="true">
+            <input type="button" data-id="0" value="Get AppContract Address"></input>
+        </label>
+        <label for="appStatus">
+            <span>App Contract Operational Status </span>
+            <br><br>
+            <div>
+                <input type="radio" id="appStatus_radio_2" name="appContractStatus" value="active"/>
+                <label for="appStatus_radio_2">Active</label>
+                <input type="radio" id="appStatus_radio_1" name="appContractStatus" value="paused"/> 
+                <label for="appStatus_radio_1">Paused</label>
+                <input type="button" data-id="1" value="Get AppContract Status"></input>
+                <input type="button" data-id="2" value="Set AppContract Status"></input>
+            </div>
+        </label>
+        <label for="dataStatus">
+            <span>Data Contract Operational Status </span>
+            <br><br>
+            <div>
+                <input type="radio" id="dataStatus_radio_2" name="dataContractStatus" value="active"/>
+                <label for="dataStatus_radio_2">Active</label>
+                <input type="radio" id="dataStatus_radio_1" name="dataContractStatus" value="paused"/> 
+                <label for="dataStatus_radio_1">Paused</label>
+                <input type="button" data-id="3" value="Get DataContract Status"></input>
+                <input type="button" data-id="4" value="Set DataContract Status"></input>
+            </div>
+        </label>
+        <label for="autorizeAppContract">
+            <span>Authorize Data Contract to use App Contract Address </span>
+            <br><br>
+            <div>
+                <input type="text" class="input-field"  id="appAddress2" name="appAddress" value="0x0000000000000000000000000000000000000000" size="50">
+                <input type="button" data-id="5" value="Authorize AppContract to DataContract"></input>
+            </div>
+        </label>
+    </div>
+
+    <div class="form-break"></div>
+    <br>
+    <div class="form-style-2">
+        <div class="form-style-2-heading">Airline Administration</div>
+        <h3> Register or vote new Airline </h3>
+        <label for="airlineAddress">
+            <span>Airline Address </span>
+            <input type="text" class="input-field" id="airlineAddress" value="0x0000000000000000000000000000000000000000">
+        </label>
+        <label for="airlineName">
+            <span>Airline Name </span>
+            <input type="text" class="input-field"  id="airlineName" placeholder="Insert airline name"><br><br>
+            <input type="button" data-id="6" value="Register/Vote Airline"></input>
+        </label>
+
+        <h3>Fund Airline </h3>
+        <label for="airlineRgestrationFee">
+            <span>Registration fee </span>
+            <input type="number" class="input-field" id="airlineRgestrationFee" value="10">ETH<br><br>       
+            <input type="button" data-id="7" value="Fund Airline"></input>
+        </label>
+        <h3> Register new flight </h3>
+        <label for="flightNumber">
+                <span>Flight Number </span>
+                <input type="text" class="input-field" id="flightNumber" placeholder="Insert flight number">
+        </label>
+        <label for="airlineName">
+                <span> Flight time </span>
+                <input type="text" class="input-field"  id="newFlightTimestamp" value="0000000000"><br><br>
+                <input type="button" data-id="8" value="Register new Flight"></input>
+        </label>
+    </div>
+
+    <div class="form-break"></div>
+    <br>
+    <div class="form-style-2">
+        <div class="form-style-2-heading">Passenger - Insurance</div>
+        <label for="flights">
+            <span>Select flight </span>
+            <select id="flights"></select>
+            <input  type="button" data-id="9" value="Get Flights"></input>
+        </label>
+        <label for="flightAirlineAddress">
+            <span>Flight Airline Address </span>
+            <input type="text"  class="input-field"  id="flightAirlineAddress" disabled="true" value=""><br>
+        </label>
+        <label for="flightTimestamp">
+            <span>Flight time </span>
+            <input type="text"  class="input-field"  id="flightTimestamp" disabled="true" value=""><br>
+        </label>
+        <label for="flightStatus">
+            <span>Flight status </span>
+            <input type="text"  class="input-field"  id="flightStatus" disabled="true" value=""><br>
+        </label>
+        <label for="insuranceAmount">
+            <span>Insurance amount </span>
+            <input type="text"  class="input-field"  id="insuranceAmount" value="1">ETH<br><br>
+            <input type="button" data-id="10" value="Buy insurance"></input>
+        </label>
+    </div>
+    <div class="form-break"></div>
+    <br>
+    <div class="form-style-2">
+        <div class="form-style-2-heading">Oracles and Payout</div>
+        <label for="flightsOracles">
+            <span>Select flight </span>
+            <select id="flightsOracles"></select>
+            <input  type="button" data-id="11" value="Get Flights"></input>
+        </label>
+        <label for="flightAirlineAddressOracles">
+            <span>Flight Airline Address </span>
+            <input type="text"  class="input-field"  id="flightAirlineAddressOracles" disabled="true" value=""><br>
+        </label>
+        <label for="flightTimestampOracles">
+            <span>Flight time </span>
+            <input type="text"  class="input-field"  id="flightTimestampOracles" disabled="true" value=""><br>
+        </label>
+        <label for="flightStatusOracles">
+            <span>Flight status </span>
+            <input type="text"  class="input-field"  id="flightStatusOracles" disabled="true" value=""><br><br>
+            <input type="button" data-id="12" value="Check Flight Status"></input>
+        </label>
+        <label for="amountToWithdraw">
+            <span>Amount to withdraw </span>
+            <input type="number"  class="input-field" id="insuranceAmountToWithdraw" value="0">ETH<br><br>
+            <input type="button" data-id="13" value="Withdraw"></input>
+        </label>
+    </div>
+
+    <div id="ftc-harvest">
+    </div>
+
+    <div class="container">
+        <h2>Transaction History<span id="ftc-history"></span></h2>
+        <div>
+            <ul id="ftc-events">
+                <!-- Events will appear here from app.js -->
+            </ul>
+            <br>
+            <hr>
+        </div>
+    </div>
+    
+
+</body>
+
+</html>
