@@ -68,7 +68,7 @@ npm init
 npm install
 ```
 3. Launch ganache
-50 accounts each with at least 1000 ether are needed. Accounts 25-49 are used for oracles and 0-9 for contract owner, airlines and passenger.
+* 50 accounts each with at least 1000 ether are needed. Accounts 25-49 are used for oracles and 0-9 for contract owner, airlines and passenger.
 ```
 ganache-cli -m "<PUT HERE YOUR WALLET MNEMONIC>"
 ```
@@ -92,7 +92,7 @@ truffle test oracles.js
 
 ## Launching the APP
 1. Launch ganache
-50 accounts each with at least 1000 ether are needed. Accounts 25-49 are used for oracles and 0-9 for contract owner, airlines and passenger.
+* 50 accounts each with at least 1000 ether are needed. Accounts 25-49 are used for oracles and 0-9 for contract owner, airlines and passenger.
 ```
 ganache-cli -m "<PUT HERE YOUR WALLET MNEMONIC>"
 ```
@@ -111,7 +111,7 @@ truffle migrate
 ```
 npm run dapp
 ```
-4. Start the oracle simulation in a new terminal. At this stage, 25 oracles will be registered and waiting to the FetchFlightStatus event.
+6. Start the oracle simulation in a new terminal. At this stage, 25 oracles will be registered and waiting to the FetchFlightStatus event.
 ```
 npm run server
 ```
