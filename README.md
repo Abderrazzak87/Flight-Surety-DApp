@@ -70,7 +70,7 @@ npm install
 3. Launch ganache
 * 50 accounts each with at least 1000 ether are needed. Accounts 25-49 are used for oracles and 0-9 for contract owner, airlines and passenger.
 ```
-ganache-cli -m "<PUT HERE YOUR WALLET MNEMONIC>"
+ganache-cli -m "<PUT HERE YOUR WALLET MNEMONIC>" -e 1000 -a 50 -l 10000000 
 ```
 4. Update truffle.js
 Update ligne 2 and ligne 8 with your ganache **MNEMONIC** and **RPC SERVER**
@@ -94,7 +94,7 @@ truffle test oracles.js
 1. Launch ganache
 * 50 accounts each with at least 1000 ether are needed. Accounts 25-49 are used for oracles and 0-9 for contract owner, airlines and passenger.
 ```
-ganache-cli -m "<PUT HERE YOUR WALLET MNEMONIC>"
+ganache-cli -m "<PUT HERE YOUR WALLET MNEMONIC>" -e 1000 -a 50 -l 10000000 
 ```
 2. Update truffle.js
 Update ligne 2 and ligne 8 with your ganache **MNEMONIC** and **RPC SERVER**
