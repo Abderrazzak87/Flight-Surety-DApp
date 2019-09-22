@@ -279,6 +279,22 @@ contract FlightSuretyApp {
     }
 
     /**
+     *  @dev returns all the airlines registred to the contract
+     *
+    */
+    function getAllFlights() external view requireIsOperational returns(bytes32[] memory) {
+        return dataContract.getAllFlights();
+    }
+
+    /**
+     *  @dev returns all the airlines registred to the contract
+     *
+    */
+    function getPassengerBalance() external view requireIsOperational returns(uint256){
+        return dataContract.getPassengerBalance(msg.sender);
+    }
+
+    /**
      *  @dev fetch Airline details
      *  @param _airlineAddress the airline address to fetch
      *
@@ -549,5 +565,7 @@ contract FlightSuretyData {
         bool paid
     );
     function pay(address _passenger, uint256 _amount) external payable;
+    function getAllFlights() external view returns(bytes32[] memory);
+    function getPassengerBalance(address _passengerAddress) external view  returns(uint256);
 
 }

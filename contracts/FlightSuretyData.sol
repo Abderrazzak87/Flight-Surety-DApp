@@ -347,6 +347,19 @@ contract FlightSuretyData {
     }
 
     /**
+     *  @dev returns all the airlines registred to the contract
+     *
+    */
+    function getAllFlights() external view requireIsOperational requireIsAuthorized returns(bytes32[] memory)
+    {
+        bytes32[] memory flightsRegistred = new bytes32[](flightKeys.length);
+        for (uint i = 0; i < flightKeys.length; i++){
+            flightsRegistred[i] = flights[flightKeys[i]].flightNumber;
+        }
+        return flightsRegistred;
+    }
+
+    /**
      *  @dev returns the passenger balance if exists
      *
     */

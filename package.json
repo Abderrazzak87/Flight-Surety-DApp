@@ -1,0 +1,28 @@
+{
+  "name": "flightsurety",
+  "version": "1.0.0",
+  "description": "",
+  "directories": {
+    "test": "test"
+  },
+  
+  "repository": "",
+  "license": "MIT",
+  "scripts": {
+    "test": "truffle.cmd test",
+    "server": "node ./src/server/index.js",
+    "dapp": "lite-server"
+  },
+  "author": "Stefannel",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "lite-server": "^2.5.4",
+    "truffle-assertions": "^0.8.2",
+    "truffle-hdwallet-provider": "^1.0.6",
+    "web3": "^1.0.0-beta.52"
+  },
+  "dependencies": {
+    "express": "4.16.4",
+    "openzeppelin-solidity": "^2.2.0"
+  }
+}
