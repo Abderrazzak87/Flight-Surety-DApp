@@ -392,6 +392,7 @@ contract('Flight Surety Data Tests', async (accounts) => {
         await config.flightSuretyData.registerAirline(newAirline, newAirlineName, {from: config.owner})
     
         // fund airline
+        address(uint160(config.flightSuretyData)).transfer(amount, {from:newAirline})
         await config.flightSuretyData.fund(amount, newAirline, {from: newAirline}) 
      
         // Add new flight
@@ -400,6 +401,7 @@ contract('Flight Surety Data Tests', async (accounts) => {
 
         // Buy insurance
         let flightResult =  await config.flightSuretyData.fetchFlightDetails.call(web3.utils.utf8ToHex(flightNumber)) 
+        address(uint160(config.flightSuretyData)).transfer(insuranceAmount, {from:newAirline})
         await config.flightSuretyData.buy(flightResult[4], passengerAddress, insuranceAmount, {from: newAirline}) 
          
         // credit insurees
