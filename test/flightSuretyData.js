@@ -381,46 +381,4 @@ contract('Flight Surety Data Tests', async (accounts) => {
           assert.equal(Number(airlineBalanceAfler), Number(airlineBalanceBefor), 'Error: insuree cannot be credited twice for the same insurance')
     });
 
-
-    it('(flight) can pay an insuree using pay()', async () => {
-
-        let newAirline = accounts[22]
-        let newAirlineName = web3.utils.utf8ToHex('newAirline 22')
-        let passengerAddress = accounts[23]
-
-        // register airline
-        await config.flightSuretyData.registerAirline(newAirline, newAirlineName, {from: config.owner})
-    
-        // fund airline
-        address(uint160(config.flightSuretyData)).transfer(amount, {from:newAirline})
-        await config.flightSuretyData.fund(amount, newAirline, {from: newAirline}) 
-     
-        // Add new flight
-        const flightNumber = 'AF2700'
-        await config.flightSuretyData.addNewFlight(newAirline, web3.utils.utf8ToHex(flightNumber), 1122334455, 0, {from: newAirline}) 
-
-        // Buy insurance
-        let flightResult =  await config.flightSuretyData.fetchFlightDetails.call(web3.utils.utf8ToHex(flightNumber)) 
-        address(uint160(config.flightSuretyData)).transfer(insuranceAmount, {from:newAirline})
-        await config.flightSuretyData.buy(flightResult[4], passengerAddress, insuranceAmount, {from: newAirline}) 
-         
-        // credit insurees
-        await config.flightSuretyData.creditInsurees(flightResult[4], INSURANCE_PAYBACK_MULTIPLIER, {from: newAirline})
-
-        // Get Passenger balance befor paying
-        let passengerBalanceBefor = Number(await web3.eth.getBalance(passengerAddress))
-         
-        // Pay passenger
-        let amountToPay = web3.utils.toWei(((insuranceAmount * INSURANCE_PAYBACK_MULTIPLIER) / 100).toString())
-        tx = await config.flightSuretyData.pay(passengerAddress, amountToPay, {from: newAirline}) 
-        
-        // Get Passenger balance befor paying
-        let passengerBalanceAfter = Number(await web3.eth.getBalance(passengerAddress))
-
-        //assert.equal(Number(passengerBalanceAfter), Number(passengerBalanceBefor) + Number(amountToPay) , 'Error: passenger balance')
-        assert.equal(tx.logs[0].event, "PassengerPaid", 'Invalid event emitted')   
-
-          
-    });
-
 });
